@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>学习通独立作业模拟页</title>
+  <style>body{font:16px/1.6 sans-serif;margin:30px;max-width:900px}.questionLi{padding:18px;margin:14px 0;border:1px solid #ddd;border-radius:8px}.answer_p{display:block;padding:5px}.native-submit{padding:10px 18px}</style>
+</head>
+<body>
+  <h1>独立作业模拟页（不会连接真实学习通）</h1>
+  <p>在助手中填入任意非空测试 Key 后点击“开始答题”。本页用本地假接口返回固定答案。</p>
+  <div class="questionLi" data-question-id="q1"><div class="mark_name"><span class="num">1.</span>（单选题）中国的首都是？</div><input type="hidden" name="answertype1" value="0"><label class="answer_p"><span class="num_option">A</span> 上海<input type="radio" name="q1"></label><label class="answer_p"><span class="num_option">B</span> 北京<input type="radio" name="q1"></label></div>
+  <div class="questionLi" data-question-id="q2"><div class="mark_name"><span class="num">2.</span>（多选题）下列哪些是偶数？</div><input type="hidden" name="answertype2" value="1"><label class="answer_p"><span class="num_option">A</span> 2<input type="checkbox"></label><label class="answer_p"><span class="num_option">B</span> 3<input type="checkbox"></label><label class="answer_p"><span class="num_option">C</span> 4<input type="checkbox"></label></div>
+  <div class="questionLi" data-question-id="q3"><div class="mark_name"><span class="num">3.</span>（判断题）1 等于 1。</div><input type="hidden" name="answertype3" value="3"><label class="answer_p"><span class="num_option">A</span> 正确<input type="radio" name="q3"></label><label class="answer_p"><span class="num_option">B</span> 错误<input type="radio" name="q3"></label></div>
+  <div class="questionLi" data-question-id="q4"><div class="mark_name"><span class="num">4.</span>（填空题）四季依次为____、____、____、____。</div><input type="hidden" name="answertype4" value="2"><input type="text"><input type="text"><input type="text"><input type="text"></div>
+  <div class="questionLi" data-question-id="q5"><div class="mark_name"><span class="num">5.</span>（简答题）请说明水循环的基本过程。</div><input type="hidden" name="answertype5" value="4"><textarea rows="4" cols="70"></textarea></div>
+  <button id="native-submit" class="native-submit">学习通原生提交按钮（模拟）</button>
+  <p>提交按钮点击次数：<b id="submit-count">0</b></p>
+  <pre id="e2e-result">等待测试</pre>
+  <script>
+    const mockAnswers={q1:{type:"single",answers:["B"]},q2:{type:"multiple",answers:["A","C"]},q3:{type:"judgment",answers:["true"]},q4:{type:"fill",answers:["春","夏","秋","冬"]},q5:{type:"short",answers:["水通过蒸发、凝结、降水和径流等环节持续循环。"]},"connection-test":{type:"judgment",answers:["true"]}};
+    window.GM_getValue=()=>({}); window.GM_setValue=()=>{};
+    window.GM_xmlhttpRequest=(details)=>{let stopped=false;const body=JSON.parse(details.data);const match=body.messages[1].content.match(/"questionId":"([^"]+)"/);const id=match?match[1]:"";const timer=setTimeout(()=>{if(stopped)return;const item=mockAnswers[id];details.onload({status:200,responseText:JSON.stringify({choices:[{message:{content:JSON.stringify({questionId:id,...item})}}],usage:{total_tokens:10}})});},150);return{abort(){stopped=true;clearTimeout(timer);details.onabort&&details.onabort();}}};
+    document.getElementById("native-submit").addEventListener("click",()=>{const count=document.getElementById("submit-count");count.textContent=String(Number(count.textContent)+1);});
+  </script>
+  <script src="../chaoxing-homework-assistant.user.js"></script>
+  <script>
+    window.ChaoxingHomeworkAssistant.initRuntime(document,{pathname:"/mooc2/work/dowork"});
+    if(new URLSearchParams(location.search).get("autorun")==="1"){
+      document.querySelector('[data-field="apiKey"]').value="local-mock-key";
+      document.querySelector('button[data-action="start"]').click();
+      const timer=setInterval(()=>{
+        const status=document.querySelector('[data-field="status"]').textContent;
+        if(!status.includes("填写完成"))return;
+        clearInterval(timer);
+        const result={status,q1:document.querySelectorAll('[data-question-id="q1"] input[type="radio"]')[1].checked,q2:Array.from(document.querySelectorAll('[data-question-id="q2"] input[type="checkbox"]')).map(x=>x.checked),q3:document.querySelectorAll('[data-question-id="q3"] input[type="radio"]')[0].checked,q4:Array.from(document.querySelectorAll('[data-question-id="q4"] input[type="text"]')).map(x=>x.value),q5:document.querySelector('[data-question-id="q5"] textarea').value,submitClicks:Number(document.getElementById("submit-count").textContent)};
+        document.getElementById("e2e-result").textContent=JSON.stringify(result);
+        document.body.setAttribute("data-e2e","complete");
+      },50);
+    }
+  </script>
+</body>
+</html>

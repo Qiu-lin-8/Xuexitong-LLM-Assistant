@@ -1,0 +1,11 @@
+{
+  "name": "chaoxing-homework-assistant",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "test": "node --test test/*.test.js",
+    "check": "node --check src/chaoxing-homework-assistant.user.js && node --check chaoxing-homework-assistant.user.js"
+  }
+}
