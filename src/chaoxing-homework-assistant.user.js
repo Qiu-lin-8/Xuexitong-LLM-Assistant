@@ -5,6 +5,10 @@
 // @author       March, Qiu-lin-8
 // @description  仅处理学习通独立作业：由用户手动启动，使用 DeepSeek 生成并填写答案，绝不自动提交。
 // @license      MIT
+// @homepageURL  https://github.com/Qiu-lin-8/Xuexitong-LLM-Assistant
+// @supportURL   https://github.com/Qiu-lin-8/Xuexitong-LLM-Assistant/issues
+// @updateURL    https://raw.githubusercontent.com/Qiu-lin-8/Xuexitong-LLM-Assistant/main/chaoxing-homework-assistant.user.js
+// @downloadURL  https://raw.githubusercontent.com/Qiu-lin-8/Xuexitong-LLM-Assistant/main/chaoxing-homework-assistant.user.js
 // @match        *://*.chaoxing.com/*
 // @match        *://*.edu.cn/*
 // @match        *://*.nbdlib.cn/*
@@ -382,6 +386,8 @@
         data: JSON.stringify({
           model: MODEL,
           stream: false,
+          thinking: { type: "disabled" },
+          response_format: { type: "json_object" },
           temperature: 0.1,
           max_tokens: question.type === "short" ? 500 : 180,
           messages: [

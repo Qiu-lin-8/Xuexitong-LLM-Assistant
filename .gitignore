@@ -1,6 +1,12 @@
 # 本地工具数据（不对外分享，含记忆/任务记录）
 .workbuddy/
 
+# 本地测试浏览器配置（可能包含登录会话，严禁提交）
+logs/tmp/
+
+# Node 本地依赖
+node_modules/
+
 # 备份副本（仓库只需主脚本 chaoxing-ai-llm.user.js）
 chaoxing-original.user.js
 

@@ -219,6 +219,24 @@ test("API 超时会重试，成功后校验结构化答案", async () => {
   assert.deepEqual(response.parsed.answers, ["B"]);
 });
 
+test("DeepSeek 请求显式关闭思考模式并启用 JSON Output", async () => {
+  const question = choiceQuestion("single", 2);
+  const controller = new assistant.TaskController(); controller.start();
+  let requestBody;
+  const request = (details) => {
+    requestBody = JSON.parse(details.data);
+    setTimeout(() => details.onload({
+      status: 200,
+      responseText: JSON.stringify({ choices: [{ message: { content: '{"questionId":"q-choice","type":"single","answers":["A"]}' } }] })
+    }), 0);
+    return { abort() { details.onabort(); } };
+  };
+
+  await assistant.requestDeepSeek({ apiKey: "test-only", question, controller, request, maxAttempts: 1 });
+  assert.deepEqual(requestBody.thinking, { type: "disabled" });
+  assert.deepEqual(requestBody.response_format, { type: "json_object" });
+});
+
 test("HTTP 429 限流会等待后重试", async () => {
   const question = choiceQuestion("single", 2);
   const controller = new assistant.TaskController(); controller.start();

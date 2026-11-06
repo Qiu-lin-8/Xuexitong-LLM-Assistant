@@ -7,8 +7,8 @@ V1.0 只负责识别、生成和填写答案。脚本不会自动开始、不会
 ## 安装
 
 1. 安装 Tampermonkey 浏览器扩展。
-2. 打开仓库根目录的 [`chaoxing-homework-assistant.user.js`](./chaoxing-homework-assistant.user.js)。
-3. 在 GitHub 文件页点击 Raw，Tampermonkey 会显示安装页面。
+2. 打开仓库根目录的 [`chaoxing-homework-assistant.user.js`](./chaoxing-homework-assistant.user.js)，或使用[在线安装链接](https://raw.githubusercontent.com/Qiu-lin-8/Xuexitong-LLM-Assistant/main/chaoxing-homework-assistant.user.js)。
+3. Tampermonkey 显示安装页面后点击“安装”。
 4. 安装 V1.0 后，禁用旧版“学习通AI学习助手”，避免两个脚本同时运行。
 5. 登录学习通并进入某一份独立作业页面。
 
@@ -37,7 +37,7 @@ V1.0 识别以下路径：
 - 手动开始，防止页面加载后自动答题
 - 单选、多选、判断、填空、简答题识别与填写
 - 题目 ID、题型和答案数量校验，避免答案错位
-- DeepSeek 结构化 JSON 答案
+- DeepSeek JSON Output 结构化答案，并显式关闭默认思考模式以提高格式稳定性
 - 45 秒超时、网络错误与 5xx 重试、429 限流退避
 - 暂停后不再发起新请求或填写答案
 - 停止时中止当前请求，后续题目不再处理
@@ -93,7 +93,7 @@ node scripts/test-server.js
 
 ## 测试状态
 
-- Node 自动化测试：19/19 通过
+- Node 自动化测试：20/20 通过
 - 语法检查：通过
 - 本地模拟页文件及 HTTP 访问：通过
 - 浏览器可视化验收：真实独立作业页面中悬浮窗正常显示
