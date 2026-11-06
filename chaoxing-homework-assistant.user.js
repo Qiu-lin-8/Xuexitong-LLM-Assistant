@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         学习通 AI 独立作业助手
 // @namespace    https://github.com/Qiu-lin-8/Xuexitong-LLM-Assistant
-// @version      1.0.0
+// @version      1.1.0
 // @author       March, Qiu-lin-8
 // @description  仅处理学习通独立作业：由用户手动启动，使用 DeepSeek 生成并填写答案，绝不自动提交。
 // @license      MIT
@@ -24,9 +24,13 @@
 (function (global) {
   "use strict";
 
-  const VERSION = "1.0.0";
+  const VERSION = "1.1.0";
   const API_URL = "https://api.deepseek.com/chat/completions";
   const MODEL = "deepseek-flash";
+  const MODEL_OPTIONS = Object.freeze([
+    { value: "deepseek-flash", label: "DeepSeek Flash（V4.1，低成本）" },
+    { value: "deepseek-v4-pro", label: "DeepSeek V4 Pro（更强能力）" }
+  ]);
   const CONFIG_KEY = "chaoxing_homework_assistant_v1";
   const SUPPORTED_PATHS = new Set([
     "/mooc2/work/dowork",
@@ -368,7 +372,12 @@
     return GM_xmlhttpRequest(details);
   }
 
-  function requestDeepSeek({ apiKey, question, controller, timeoutMs = 45000, maxAttempts = 3, request = gmRequest, retryDelay }) {
+  function normalizeModel(value) {
+    const requested = String(value || "");
+    return MODEL_OPTIONS.some((option) => option.value === requested) ? requested : MODEL;
+  }
+
+  function requestDeepSeek({ apiKey, model = MODEL, question, controller, timeoutMs = 45000, maxAttempts = 3, request = gmRequest, retryDelay }) {
     const prompt = buildPrompt(question);
     const execute = (attempt) => new Promise((resolve, reject) => {
       let settled = false;
@@ -384,7 +393,7 @@
         url: API_URL,
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
         data: JSON.stringify({
-          model: MODEL,
+          model: normalizeModel(model),
           stream: false,
           thinking: { type: "disabled" },
           response_format: { type: "json_object" },
@@ -440,11 +449,19 @@
 
   function readConfig() {
     const saved = typeof GM_getValue === "function" ? GM_getValue(CONFIG_KEY, {}) : {};
-    return { apiKey: String(saved && saved.apiKey || "") };
+    return {
+      apiKey: String(saved && saved.apiKey || ""),
+      model: normalizeModel(saved && saved.model)
+    };
   }
 
   function saveConfig(config) {
-    if (typeof GM_setValue === "function") GM_setValue(CONFIG_KEY, { apiKey: String(config.apiKey || "") });
+    if (typeof GM_setValue === "function") {
+      GM_setValue(CONFIG_KEY, {
+        apiKey: String(config.apiKey || ""),
+        model: normalizeModel(config.model)
+      });
+    }
   }
 
   function createPanel(documentRef) {
@@ -455,7 +472,7 @@
       #cxhw-panel .cxhw-body{padding:12px;overflow:auto;max-height:calc(100vh - 180px)}#cxhw-panel .cxhw-row{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:9px}#cxhw-panel button{border:0;border-radius:7px;padding:7px 10px;cursor:pointer;background:#e5e7eb;color:#111827}#cxhw-panel button.primary{background:#2563eb;color:#fff}#cxhw-panel button.danger{background:#fee2e2;color:#b91c1c}#cxhw-panel button:disabled{opacity:.45;cursor:not-allowed}
       #cxhw-panel .cxhw-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0}#cxhw-panel .cxhw-stat{background:#f8fafc;border-radius:8px;padding:7px;text-align:center}#cxhw-panel .cxhw-stat b{display:block;font-size:16px;color:#1d4ed8}
       #cxhw-panel .cxhw-progress{height:7px;background:#e5e7eb;border-radius:99px;overflow:hidden}#cxhw-panel .cxhw-progress i{display:block;height:100%;width:0;background:#2563eb;transition:width .2s}
-      #cxhw-panel .cxhw-settings{display:none;padding:9px;background:#f8fafc;border-radius:8px;margin-bottom:9px}#cxhw-panel .cxhw-settings.open{display:block}#cxhw-panel input[type=password]{width:100%;padding:7px;border:1px solid #cbd5e1;border-radius:6px;margin:5px 0 7px}#cxhw-panel label{display:block}
+      #cxhw-panel .cxhw-settings{display:none;padding:9px;background:#f8fafc;border-radius:8px;margin-bottom:9px}#cxhw-panel .cxhw-settings.open{display:block}#cxhw-panel input[type=password],#cxhw-panel select{width:100%;padding:7px;border:1px solid #cbd5e1;border-radius:6px;margin:5px 0 7px;background:#fff}#cxhw-panel label{display:block}
       #cxhw-panel .cxhw-log{height:150px;overflow:auto;background:#0f172a;color:#cbd5e1;border-radius:8px;padding:8px;font:12px/1.5 Consolas,monospace;white-space:pre-wrap}#cxhw-panel .cxhw-note{color:#b45309;background:#fffbeb;border-radius:7px;padding:7px;margin-bottom:9px}
     `;
     documentRef.head.appendChild(style);
@@ -471,6 +488,7 @@
         <div class="cxhw-row"><button data-action="settings">API 设置</button><button data-action="test">测试连接</button></div>
         <div class="cxhw-settings">
           <label>DeepSeek API Key<input data-field="apiKey" type="password" autocomplete="off" placeholder="仅保存在 Tampermonkey 本地"></label>
+          <label>模型<select data-field="model"><option value="deepseek-flash">DeepSeek Flash（V4.1，低成本）</option><option value="deepseek-v4-pro">DeepSeek V4 Pro（更强能力）</option></select></label>
           <label><input data-field="overwrite" type="checkbox"> 重新填写并覆盖已有答案</label>
           <button data-action="save">保存设置</button>
         </div>
@@ -491,9 +509,11 @@
     const fields = {
       status: $('[data-field="status"]'), bar: $('[data-field="bar"]'), progress: $('[data-field="progress"]'),
       success: $('[data-field="success"]'), failed: $('[data-field="failed"]'), log: $('[data-field="log"]'),
-      apiKey: $('[data-field="apiKey"]'), overwrite: $('[data-field="overwrite"]'), settings: $(".cxhw-settings")
+      apiKey: $('[data-field="apiKey"]'), model: $('[data-field="model"]'), overwrite: $('[data-field="overwrite"]'), settings: $(".cxhw-settings")
     };
-    fields.apiKey.value = readConfig().apiKey;
+    const savedConfig = readConfig();
+    fields.apiKey.value = savedConfig.apiKey;
+    fields.model.value = savedConfig.model;
     let activeController = null;
     let activePromise = null;
 
@@ -510,6 +530,7 @@
       if (status) fields.status.textContent = status;
     };
     const getApiKey = () => String(fields.apiKey.value || "").trim();
+    const getModel = () => normalizeModel(fields.model.value);
 
     async function runHomework() {
       const controller = new TaskController();
@@ -540,7 +561,7 @@
           }
           log(`第 ${question.number} 题：正在请求 DeepSeek…`);
           try {
-            const response = await requestDeepSeek({ apiKey: getApiKey(), question, controller });
+            const response = await requestDeepSeek({ apiKey: getApiKey(), model: getModel(), question, controller });
             await controller.checkpoint();
             const result = fillQuestion(question, response.parsed, { overwrite: fields.overwrite.checked });
             await controller.checkpoint();
@@ -576,7 +597,7 @@
       if (!button) return;
       const action = button.dataset.action;
       if (action === "settings") fields.settings.classList.toggle("open");
-      if (action === "save") { saveConfig({ apiKey: getApiKey() }); log("API 设置已保存到 Tampermonkey 本地。" ); }
+      if (action === "save") { saveConfig({ apiKey: getApiKey(), model: getModel() }); log(`API 设置已保存；当前模型：${getModel()}。` ); }
       if (action === "start") {
         if (activePromise || (activeController && ["running", "paused"].includes(activeController.state))) {
           log("已有答题任务正在运行，已忽略重复启动。" );
@@ -606,7 +627,7 @@
         const controller = new TaskController(); controller.start();
         fields.status.textContent = "正在测试 API";
         try {
-          await requestDeepSeek({ apiKey: getApiKey(), question: testQuestion, controller, timeoutMs: 20000, maxAttempts: 1 });
+          await requestDeepSeek({ apiKey: getApiKey(), model: getModel(), question: testQuestion, controller, timeoutMs: 20000, maxAttempts: 1 });
           fields.status.textContent = "API 连接正常"; log("DeepSeek API 连接测试成功。" );
         } catch (error) {
           fields.status.textContent = "API 连接失败"; log(`连接测试失败：${error.message}`, "error");
@@ -618,10 +639,10 @@
   }
 
   const exported = {
-    VERSION, API_URL, MODEL, SUPPORTED_PATHS, TaskController, TaskStoppedError,
+    VERSION, API_URL, MODEL, MODEL_OPTIONS, SUPPORTED_PATHS, TaskController, TaskStoppedError,
     isIndependentHomeworkPath, normalizeWhitespace, stripQuestionPrefix, inferQuestionType,
     extractOption, extractQuestion, extractQuestions, isQuestionAnswered, questionPayload,
-    buildPrompt, parseStructuredAnswer, fillQuestion, requestDeepSeek, initRuntime
+    buildPrompt, parseStructuredAnswer, fillQuestion, normalizeModel, requestDeepSeek, initRuntime
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = exported;

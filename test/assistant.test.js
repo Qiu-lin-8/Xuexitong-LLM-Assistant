@@ -219,7 +219,7 @@ test("API 超时会重试，成功后校验结构化答案", async () => {
   assert.deepEqual(response.parsed.answers, ["B"]);
 });
 
-test("DeepSeek 请求显式关闭思考模式并启用 JSON Output", async () => {
+test("DeepSeek 请求透传所选模型、关闭思考模式并启用 JSON Output", async () => {
   const question = choiceQuestion("single", 2);
   const controller = new assistant.TaskController(); controller.start();
   let requestBody;
@@ -232,9 +232,18 @@ test("DeepSeek 请求显式关闭思考模式并启用 JSON Output", async () =>
     return { abort() { details.onabort(); } };
   };
 
-  await assistant.requestDeepSeek({ apiKey: "test-only", question, controller, request, maxAttempts: 1 });
+  await assistant.requestDeepSeek({ apiKey: "test-only", model: "deepseek-v4-pro", question, controller, request, maxAttempts: 1 });
+  assert.equal(requestBody.model, "deepseek-v4-pro");
   assert.deepEqual(requestBody.thinking, { type: "disabled" });
   assert.deepEqual(requestBody.response_format, { type: "json_object" });
+});
+
+test("模型白名单支持 Flash 和 Pro，旧名或未知模型回退到 Flash", () => {
+  assert.deepEqual(assistant.MODEL_OPTIONS.map((option) => option.value), ["deepseek-flash", "deepseek-v4-pro"]);
+  assert.equal(assistant.normalizeModel("deepseek-flash"), "deepseek-flash");
+  assert.equal(assistant.normalizeModel("deepseek-v4-pro"), "deepseek-v4-pro");
+  assert.equal(assistant.normalizeModel("deepseek-v4-flash"), "deepseek-flash");
+  assert.equal(assistant.normalizeModel("unknown-model"), "deepseek-flash");
 });
 
 test("HTTP 429 限流会等待后重试", async () => {

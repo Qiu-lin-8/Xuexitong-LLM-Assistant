@@ -1,18 +1,18 @@
-# 学习通 AI 独立作业助手 V1.0
+# 学习通 AI 独立作业助手 V1.1
 
 基于 [March-OwO/Xuexitong-LLM-Assistant](https://github.com/March-OwO/Xuexitong-LLM-Assistant) 的 MIT 开源项目进行二次开发，专门处理老师在课程中单独布置的学习通作业。
 
-V1.0 只负责识别、生成和填写答案。脚本不会自动开始、不会自动提交，也不会处理视频、签到、章节测验或考试。请只在课程规则允许使用 AI 的情况下使用，并在提交前逐题检查。
+V1.1 只负责识别、生成和填写答案。脚本不会自动开始、不会自动提交，也不会处理视频、签到、章节测验或考试。请只在课程规则允许使用 AI 的情况下使用，并在提交前逐题检查。
 
 ## 安装
 
 1. 安装 Tampermonkey 浏览器扩展。
 2. 打开仓库根目录的 [`chaoxing-homework-assistant.user.js`](./chaoxing-homework-assistant.user.js)，或使用[在线安装链接](https://raw.githubusercontent.com/Qiu-lin-8/Xuexitong-LLM-Assistant/main/chaoxing-homework-assistant.user.js)。
 3. Tampermonkey 显示安装页面后点击“安装”。
-4. 安装 V1.0 后，禁用旧版“学习通AI学习助手”，避免两个脚本同时运行。
+4. 安装 V1.1 后，禁用旧版“学习通AI学习助手”，避免两个脚本同时运行。
 5. 登录学习通并进入某一份独立作业页面。
 
-V1.0 识别以下路径：
+V1.1 识别以下路径：
 
 - `/mooc2/work/dowork`
 - `/mooc-ans/mooc2/work/dowork`
@@ -38,6 +38,7 @@ V1.0 识别以下路径：
 - 单选、多选、判断、填空、简答题识别与填写
 - 题目 ID、题型和答案数量校验，避免答案错位
 - DeepSeek JSON Output 结构化答案，并显式关闭默认思考模式以提高格式稳定性
+- 轻量模型下拉框，可选择官方 `deepseek-flash`（默认）或 `deepseek-v4-pro`
 - 45 秒超时、网络错误与 5xx 重试、429 限流退避
 - 暂停后不再发起新请求或填写答案
 - 停止时中止当前请求，后续题目不再处理
@@ -48,18 +49,18 @@ V1.0 识别以下路径：
 ## DeepSeek 配置
 
 - API：`https://api.deepseek.com/chat/completions`
-- 模型：`deepseek-flash`
+- 模型：`deepseek-flash`（默认，低成本）或 `deepseek-v4-pro`（更强能力）
 - 鉴权：用户自己的 API Key
 
-脚本只允许连接 `api.deepseek.com`，不支持第三方中转站或多模型切换。详细说明见 [`docs/DeepSeek_API配置.md`](./docs/DeepSeek_API配置.md)。
+脚本只允许连接 `api.deepseek.com`，只提供官方白名单模型，不支持第三方中转站或自定义模型。详细说明见 [`docs/DeepSeek_API配置.md`](./docs/DeepSeek_API配置.md)。
 
 ## 项目结构
 
 ```text
 ├── chaoxing-homework-assistant.user.js       # 构建后的可安装脚本
-├── chaoxing-ai-llm.user.js                   # 上游原脚本，保留用于对照，不是 V1.0 安装入口
+├── chaoxing-ai-llm.user.js                   # 上游原脚本，保留用于对照，不是 V1.1 安装入口
 ├── src/
-│   └── chaoxing-homework-assistant.user.js   # V1.0 完整源码
+│   └── chaoxing-homework-assistant.user.js   # V1.1 完整源码
 ├── scripts/
 │   ├── build.js                              # 无依赖构建脚本
 │   └── test-server.js                        # 仅用于本地模拟页
@@ -93,7 +94,7 @@ node scripts/test-server.js
 
 ## 测试状态
 
-- Node 自动化测试：20/20 通过
+- Node 自动化测试：21/21 通过
 - 语法检查：通过
 - 本地模拟页文件及 HTTP 访问：通过
 - 浏览器可视化验收：真实独立作业页面中悬浮窗正常显示
